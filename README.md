@@ -1,6 +1,13 @@
 # turbodeploy
 A simple serverless deployer for AWS Lambda
 
+# Step By Step
+1) Create an AWS Function with CloudFormation and CFTPL using the example in this repo (see caveats below)
+2) 
+
+# Caaveats/configuration
+handler must be index.awslambda
+
 ## Why not serverless
 [Serverless](https://serverless.com/) is great but it has the following problems for us:
 * Definition of the function: serverless requires the definition of the lambda to be with the code.

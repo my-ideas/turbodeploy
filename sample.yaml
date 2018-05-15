@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Test lambda
+Metadata:
+  aws:
+    region: eu-west-1
+    capabilities: CAPABILITY_IAM
+    isTemplate: true
+    template:
+      name: "test-{{stages.0.name}}-zappone" # The name of the stack. Always use the project name as prefix
+      stage: "{{stages.0.name}}"
+Resources:
+  SampleFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [lambda.amazonaws.com]
+          Action:
+            - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - logs:*
+                Resource: arn:aws:logs:*:*:*
+                Effect: Allow
+
+  SampleFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          module.exports.awslambda = (event, context, callback) => {
+            callback(null, { message: 'Hello, world!', event });
+          };
+
+      Description: Lambda to test turbodeploy
+      Environment:
+        Variables:
+          elyenv: invalid
+      FunctionName: "test-{{stage}}-zappone"
+      Handler: index.awslambda
+      MemorySize: 128
+      Runtime: nodejs6.10
+      Timeout: '300'
+      Role: !GetAtt SampleFunctionRole.Arn
+  SampleFunctionAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref SampleFunction
+      FunctionVersion: !GetAtt SampleFunctionVersion.Version
+      Name: "{{stage}}"
+  SampleFunctionVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref SampleFunction
+      Description: The first deployment

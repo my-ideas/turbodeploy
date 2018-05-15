@@ -1,0 +1,19 @@
+{
+  "name": "@my-ideas/turbodeploy",
+  "version": "1.0.0",
+  "description": "Tiny custom serverless deploy script",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/**"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/my-ideas/turbodeploy.git"
+  },
+  "author": "Tommaso Doninelli",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/my-ideas/turbodeploy/issues"
+  },
+  "homepage": "https://github.com/my-ideas/turbodeploy#readme"
+}

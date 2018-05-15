@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+
+# USAGE ./turbodeploy <create|update|deps> [stageName]
+
+if [ -z "$2" ]; then STAGE="dev_$(whoami)"; else STAGE=$2; fi
+echo "action $1 on using stage $STAGE"
+
+# Load the funciton definition
+. ./SERVERLESS
+
+FUNC="$MYI_FUNCTION_NAME"
+HANDLER="$MYI_FUNCTION_HANDLER"
+BUILDZIP="$FUNC.zip"
+USEPROFILE=""
+S3BUCKET="elysium-lambda-bucket"
+
+if [ -z "$3" ]; then USEPROFILE=""; else USEPROFILE="--profile $3"; fi
+
+function build {
+    echo "Remove existing artifact"
+    [ -e "$BUILDZIP" ] && rm $BUILDZIP
+
+    echo "Building artifact "
+
+    # Use node_modules built for lambda if are present (eg: if you are building in osx)
+    if [ -d "node_modules_awslambda" ]; then
+        mv node_modules node_modules_local
+        mv node_modules_awslambda node_modules
+    fi
+
+    # Add the current git hash to version.git
+    echo "{\"v\":\"$(git rev-parse HEAD)\"}" > version.json
+
+    rm $BUILDZIP
+
+    zip -r $BUILDZIP ./ --exclude=*.git* --exclude=*node_modules_local* --exclude=.env --exclude=.idea/
+
+    if [ -d "node_modules_local" ]; then
+        mv node_modules node_modules_awslambda
+        mv node_modules_local node_modules
+    fi
+
+    echo "Uploading code to S3"
+    aws s3 cp $BUILDZIP s3://$S3BUCKET $USEPROFILE
+}
+function update {
+    build
+
+    echo "Updating lambda"
+    lambdav=$(aws lambda update-function-code    \
+    $USEPROFILE \
+    --function-name $FUNC \
+    --s3-bucket $S3BUCKET \
+    --s3-key $BUILDZIP \
+    --region eu-west-1 \
+    --publish | python -c "import sys, json; print(json.load(sys.stdin)['Version'])")
+
+    echo "Updating the alias"
+    aws lambda update-alias \
+            $USEPROFILE \
+            --region eu-west-1 \
+            --function-name $FUNC \
+            --function-version $lambdav \
+            --name $STAGE \
+            --description "turbodeploy - Alias for $STAGE"
+}
+#function create {
+#
+#    build
+#
+#    echo "Creating a new Lambda $FUNC handler $HANDLER"
+#
+#    lambdav=$(aws lambda create-function \
+#        $USEPROFILE \
+#        --function-name $FUNC \
+#        --role arn:aws:iam::645244340892:role/lambda-kotenna \
+#        --zip-file fileb://$BUILDZIP \
+#        --handler $HANDLER \
+#        --runtime nodejs6.10 \
+#        --description 'User Data Access Layer' \
+#        --environment Variables=\{elyenv=dev_$(whoami)\} \
+#        --publish \
+#        --memory-size 128 \
+#        --timeout 300 | python -c "import sys, json; print(json.load(sys.stdin)['Version'])")
+#
+#    aws lambda create-alias \
+#        $USEPROFILE \
+#        --region eu-central-1 \
+#        --function-name $FUNC \
+#        --function-version $lambdav \
+#        --name $STAGE \
+#        --description "turbodeploy - Alias for $STAGE"
+#}
+
+function buildDeps {
+    echo "Deleting existing node_modules folder"
+    docker run -it -v "$PWD":/var/task -e NPM_TOKEN=$(cat ~/.npmrc | awk -F= '{print $2}') elysiumtech/build-lambda-node610 npm install
+    mv node_modules node_modules_awslambda
+}
+
+
+
+echo $1
+case $1 in
+    create)
+    create
+    ;;
+    update)
+    update
+    ;;
+    deps)
+    buildDeps
+    ;;
+esac

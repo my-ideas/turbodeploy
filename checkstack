@@ -9,6 +9,15 @@ STAGE=$2
 npm install -g @my-ideas/cftpl
 profile=""
 
+echo ":::::::::"
+echo $STACKFILE
+echo $STAGE
+echo ":::::::::"
+cftpl changeset $STACKFILE $profile --stage $STAGE
+echo "========="
+pippo=$(cftpl changeset $STACKFILE $profile --stage $STAGE | grep "Creating ChangeSet")
+echo "========="
+
 changesetName=$(cftpl changeset $STACKFILE $profile --stage $STAGE | grep "Creating ChangeSet" |  cut -d "[" -f2 | cut -d "]" -f1)
 stackName=$(echo $changesetName | sed -e 's/-[0-9]*$//g')
 

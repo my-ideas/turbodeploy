@@ -11,6 +11,10 @@ profile=""
 
 changesetName=$(cftpl changeset $STACKFILE $profile --stage $STAGE | grep "Creating ChangeSet" |  cut -d "[" -f2 | cut -d "]" -f1)
 stackName=$(echo $changesetName | sed -e 's/-[0-9]*$//g')
+
+echo "Changeset: $changesetName"
+echo "StackName: $stackName"
+
 changes=$(aws cloudformation describe-change-set --change-set-name $changesetName --stack-name $stackName $profile| jq '.Changes | length')
 aws cloudformation delete-change-set --change-set-name $changesetName --stack-name $stackName $profile
 

@@ -12,13 +12,20 @@ FUNC="$MYI_FUNCTION_NAME"
 BUILDZIP="$FUNC.zip"
 USEPROFILE=""
 
+IS_TYPESCRIPT=false
+
 if [ -z "$3" ]; then USEPROFILE=""; else USEPROFILE="--profile $3"; fi
+if [ -f "tsconfig.json" ]; then IS_TYPESCRIPT=true; else IS_TYPESCRIPT=false; fi
 
 function build {
-    echo "Remove existing artifact"
-    [ -e "$BUILDZIP" ] && rm $BUILDZIP
+    
 
-    echo "Building artifact "
+    if [  "$IS_TYPESCRIPT" = true ]; then
+        echo "Building typescript"
+        npm run build
+    else
+        echo "Building plain nodejs"
+    fi
 
     # Use node_modules built for lambda if are present (eg: if you are building in osx)
     if [ -d "node_modules_awslambda" ]; then
@@ -26,14 +33,29 @@ function build {
         mv node_modules_awslambda node_modules
     fi
 
-    # Add the current git hash to version.git
-    if [ -d ".git" ]; then
-        echo "{\"v\":\"$(git rev-parse HEAD)\"}" > version.json
+    DIST=""
+    if [  "$IS_TYPESCRIPT" = true ]; then
+        DIST="dist/"
+        cp -r node_modules dist/node_modules    
     fi
 
-    rm $BUILDZIP
+    # Add the current git hash to version.git
+    if [ -d ".git" ]; then
+        echo "{\"v\":\"$(git rev-parse HEAD)\"}" > ${DIST}version.json
+    fi
 
-    zip -r $BUILDZIP ./ --exclude=*.git* --exclude=*node_modules_local* --exclude=.env --exclude=*.idea*
+    if [  "$IS_TYPESCRIPT" = true ]; then
+        cd dist
+    fi
+
+    echo "Remove existing artifact"
+    [ -e "$BUILDZIP" ] && rm $BUILDZIP
+
+    zip -r $BUILDZIP ./ --exclude=*.git* --exclude=*node_modules_local* --exclude=*.env* --exclude=*.idea* --exclude=*.vscode* --exclude=*.nyc_output* --exclude=*coverage* 
+    if [  "$IS_TYPESCRIPT" = true ]; then
+        cp $BUILDZIP  ../
+        cd ..
+    fi
 
     if [ -d "node_modules_local" ]; then
         mv node_modules node_modules_awslambda

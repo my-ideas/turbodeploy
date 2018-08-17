@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# let cftpl to create the changeset. 
+# If there are no change, the output is a mess (thanks, AWS)
+STACKFILE=$1
+STAGE=$2
+
+profile="--profile porketta"
+changesetName=$(cftpl changeset $STACKFILE --profile porketta --stage $STAGE | grep "Creating ChangeSet" |  cut -d "[" -f2 | cut -d "]" -f1)
+stackName=$(echo $changesetName | sed -e 's/-[0-9]*$//g')
+changes=$(aws cloudformation describe-change-set --change-set-name $changesetName --stack-name $stackName $profile| jq '.Changes | length')
+aws cloudformation delete-change-set --change-set-name $changesetName --stack-name $stackName $profile
+
+echo "Found $changes difference between stack $STACKFILE and $STAGE"
+exit $changes

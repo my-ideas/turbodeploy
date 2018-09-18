@@ -51,7 +51,7 @@ function build {
     echo "Remove existing artifact"
     [ -e "$BUILDZIP" ] && rm $BUILDZIP
 
-    zip -r $BUILDZIP ./ --exclude=*.git* --exclude=*node_modules_local* --exclude=*.env* --exclude=*.idea* --exclude=*.vscode* --exclude=*.nyc_output* --exclude=*coverage* 
+    zip -r $BUILDZIP ./ --exclude=*.git* --exclude=*node_modules_local* --exclude=*.env* --exclude=*.idea* --exclude=*.vscode* --exclude=*.nyc_output* --exclude=*coverage* --exclude=*.zip*
     if [  "$IS_TYPESCRIPT" = true ]; then
         cp $BUILDZIP  ../
         cd ..

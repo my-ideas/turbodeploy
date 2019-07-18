@@ -72,13 +72,11 @@ function update {
     $USEPROFILE \
     --function-name $FUNC \
     --zip-file fileb://./$BUILDZIP \
-    --region eu-west-1 \
     --publish | python -c "import sys, json; print(json.load(sys.stdin)['Version'])")
 
     echo "Updating the alias"
     aws lambda update-alias \
             $USEPROFILE \
-            --region eu-west-1 \
             --function-name $FUNC \
             --function-version $lambdav \
             --name $STAGE \

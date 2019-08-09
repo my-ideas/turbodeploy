@@ -39,7 +39,7 @@ function build {
     DIST=""
     if [  "$IS_TYPESCRIPT" = true ]; then
         DIST="dist/"
-        # cp -r node_modules dist/node_modules    
+        cp -r node_modules dist/node_modules    
     fi
   
     # Add the current git hash to version.git

@@ -17,14 +17,18 @@ IS_TYPESCRIPT=false
 if [ -z "$3" ]; then USEPROFILE=""; else USEPROFILE=" $3"; fi
 if [ -f "tsconfig.json" ]; then IS_TYPESCRIPT=true; else IS_TYPESCRIPT=false; fi
 
+    
+
 function build {
     
     # Use node_modules built for lambda if are present (eg: if you are building in osx)
     if [ -d "node_modules_awslambda" ]; then
+        echo "AWSLAMBDA Deps -- switching node_modules folders"
         mv node_modules node_modules_local
         mv node_modules_awslambda node_modules
+        touch __diokan
     fi
-    
+  
     if [  "$IS_TYPESCRIPT" = true ]; then
         echo "Building typescript"
         npm run build
@@ -35,9 +39,9 @@ function build {
     DIST=""
     if [  "$IS_TYPESCRIPT" = true ]; then
         DIST="dist/"
-        cp -r node_modules dist/node_modules    
+        # cp -r node_modules dist/node_modules    
     fi
-
+  
     # Add the current git hash to version.git
     if [ -d ".git" ]; then
         echo "{\"v\":\"$(git rev-parse HEAD)\"}" > ${DIST}version.json
@@ -56,8 +60,13 @@ function build {
         cd ..
     fi
 
-    if [ -d "node_modules_local" ]; then
+    if [ -f "__diokan" ]; then
+        echo "AWSLAMBDA Deps -- Getting back awslambda deps"
+        rm __diokan
         mv node_modules node_modules_awslambda
+    fi
+
+    if [ -d "node_modules_local" ]; then        
         mv node_modules_local node_modules
     fi
 
@@ -66,7 +75,7 @@ function build {
 function update {
     build
 
-    echo "Updating lambda"
+    echo "Updating lambda [$USEPROFILE]"
     lambdav=$(aws lambda update-function-code    \
     $USEPROFILE \
     --function-name $FUNC \
@@ -83,10 +92,18 @@ function update {
 }
 
 function package {
-    mv node_modules dzeko_goal
-    docker run -it -v "$PWD":/var/task -e NPM_TOKEN=$(cat ~/.npmrc | awk -F= '{print $2}') elysiumtech/build-lambda-node610 npm install
-    mv node_modules node_modules_awslambda
-    mv dzeko_goal node_modules
+    rm -rf node_modules_awslambda
+
+    if [ -d "node_modules" ]; then
+        mv node_modules node_modules_local        
+    fi
+
+    docker run -it -v "$PWD":/var/task -e NPM_TOKEN=$(cat ~/.npmrc | head -n 1 | awk -F= '{print $2}') elysiumtech/build-lambda-node610 npm install 
+    mv node_modules node_modules_awslambda    
+
+    if [ -d "node_modules_local" ]; then
+        mv node_modules_local node_modules
+    fi
 }
 
 
@@ -98,6 +115,9 @@ case $1 in
     ;;
     update)
     update
+    ;;
+    build)
+    build 
     ;;
     package)
     package

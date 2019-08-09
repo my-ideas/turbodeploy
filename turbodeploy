@@ -19,18 +19,17 @@ if [ -f "tsconfig.json" ]; then IS_TYPESCRIPT=true; else IS_TYPESCRIPT=false; fi
 
 function build {
     
-
+    # Use node_modules built for lambda if are present (eg: if you are building in osx)
+    if [ -d "node_modules_awslambda" ]; then
+        mv node_modules node_modules_local
+        mv node_modules_awslambda node_modules
+    fi
+    
     if [  "$IS_TYPESCRIPT" = true ]; then
         echo "Building typescript"
         npm run build
     else
         echo "Building plain nodejs"
-    fi
-
-    # Use node_modules built for lambda if are present (eg: if you are building in osx)
-    if [ -d "node_modules_awslambda" ]; then
-        mv node_modules node_modules_local
-        mv node_modules_awslambda node_modules
     fi
 
     DIST=""
@@ -84,9 +83,10 @@ function update {
 }
 
 function package {
-    echo "Deleting existing node_modules folder"
+    mv node_modules dzeko_goal
     docker run -it -v "$PWD":/var/task -e NPM_TOKEN=$(cat ~/.npmrc | awk -F= '{print $2}') elysiumtech/build-lambda-node610 npm install
     mv node_modules node_modules_awslambda
+    mv dzeko_goal node_modules
 }
 
 

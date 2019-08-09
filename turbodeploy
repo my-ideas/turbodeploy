@@ -14,7 +14,7 @@ USEPROFILE=""
 
 IS_TYPESCRIPT=false
 
-if [ -z "$3" ]; then USEPROFILE=""; else USEPROFILE="--profile $3"; fi
+if [ -z "$3" ]; then USEPROFILE=""; else USEPROFILE=" $3"; fi
 if [ -f "tsconfig.json" ]; then IS_TYPESCRIPT=true; else IS_TYPESCRIPT=false; fi
 
 function build {

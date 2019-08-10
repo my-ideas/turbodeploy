@@ -31,7 +31,11 @@ function build {
   
     if [  "$IS_TYPESCRIPT" = true ]; then
         echo "Building typescript"
-        npm run build
+        if [  -f "turbodeploy.nocompile" ]; then
+            echo "Skipping npm run build"
+        else
+            npm run build
+        fi        
     else
         echo "Building plain nodejs"
     fi
